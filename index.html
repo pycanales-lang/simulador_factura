@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Laboratorio Timeline</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#0b3ea8;
+color:white;
+padding:40px;
+}
+
+.container{
+max-width:500px;
+margin:auto;
+}
+
+.timeline{
+position:relative;
+height:120px;
+margin-top:40px;
+}
+
+.line{
+position:absolute;
+top:60px;
+width:100%;
+height:4px;
+background:white;
+}
+
+.event{
+position:absolute;
+width:42px;
+height:42px;
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
+transform:translate(-50%,-50%);
+top:60px;
+}
+
+.inst{background:#4CC9F0;}
+.fact{background:#FFD166;color:black;}
+.corte{background:#EF476F;}
+
+.label{
+position:absolute;
+top:90px;
+transform:translateX(-50%);
+font-size:13px;
+}
+
+input{
+padding:10px;
+font-size:16px;
+border-radius:8px;
+border:none;
+}
+
+button{
+padding:10px 20px;
+border:none;
+border-radius:8px;
+margin-left:10px;
+cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Test Timeline Facturación</h2>
+
+<input type="date" id="fecha">
+<button onclick="calcular()">Calcular</button>
+
+<div class="timeline">
+
+<div class="line"></div>
+
+<div id="inst" class="event inst">I</div>
+<div id="instLabel" class="label">Inst</div>
+
+<div id="fact" class="event fact">F</div>
+<div id="factLabel" class="label">Factura</div>
+
+<div id="corte" class="event corte">C</div>
+<div id="corteLabel" class="label">Corte</div>
+
+</div>
+
+<p id="info"></p>
+
+</div>
+
+<script>
+
+function calcular(){
+
+let fecha = new Date(document.getElementById("fecha").value)
+
+let dia = fecha.getDate()
+
+/* CICLO AUTOMATICO */
+
+let ciclo
+
+if(dia<=6) ciclo=7
+else if(dia<=14) ciclo=15
+else if(dia<=20) ciclo=21
+else ciclo=1
+
+/* CORTE SEGUN CICLO */
+
+let corte
+
+if(ciclo==1) corte=3
+if(ciclo==7) corte=3
+if(ciclo==15) corte=4
+if(ciclo==21) corte=4
+
+/* POSICIONES */
+
+let posInst = (dia/31)*100
+let posFact = (ciclo/31)*100
+let posCorte = (corte/31)*100
+
+setPos("inst","instLabel",posInst,dia)
+setPos("fact","factLabel",posFact,ciclo)
+setPos("corte","corteLabel",posCorte,corte)
+
+document.getElementById("info").innerHTML=
+
+`
+Día instalación: ${dia}<br>
+Ciclo asignado: ${ciclo}<br>
+Corte parcial: ${corte}
+`
+
+}
+
+function setPos(id,label,pos,text){
+
+document.getElementById(id).style.left=pos+"%"
+document.getElementById(label).style.left=pos+"%"
+document.getElementById(id).innerHTML=text
+
+}
+
+</script>
+
+</body>
+</html>
