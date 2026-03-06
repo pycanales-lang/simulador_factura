@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador Facturación - Control Churn</title>
+    <title>Simulador Facturación - Gestión Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --tigo: #0033A0; --tigo2: #0057D9; --danger: #EF476F; --warning: #FFD166; --success: #06D6A0; }
@@ -12,7 +12,6 @@
         .container { max-width: 420px; margin: auto; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .title { font-size: 20px; font-weight: 600; }
-        
         .help { width: 36px; height: 36px; background: white; color: var(--tigo); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; }
 
         .card { background: rgba(255,255,255,0.12); padding: 18px; border-radius: 16px; margin-bottom: 15px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
@@ -24,7 +23,6 @@
         .btn-clear { background: rgba(255,255,255,0.2); color: white; }
 
         .meses { display: flex; justify-content: space-between; margin-top: 20px; font-weight: 600; opacity: 0.8; font-size: 14px; min-height: 21px; }
-        
         .timeline { position: relative; height: 160px; margin-top: 10px; }
         .line { position: absolute; top: 50%; width: 100%; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; }
         
@@ -41,15 +39,13 @@
         .label.top { top: 5%; }
         .label.bottom { top: 85%; }
 
-        .result { margin-top: 15px; font-size: 14px; line-height: 1.5; }
+        .result { margin-top: 15px; font-size: 14px; line-height: 1.6; }
+        .good { color: var(--success); font-weight: 600; }
         .warning-text { color: var(--warning); font-weight: 600; }
+        .tip-pago { color: #06D6A0; font-size: 12px; font-style: italic; display: block; margin-top: 2px; }
         
-        /* Banner de Alerta Early Churn */
         .churn-banner { margin-top: 20px; padding: 15px; border-radius: 12px; background: #8B0000; border: 2px solid var(--danger); display: none; animation: pulse 2s infinite; }
-        .churn-banner h4 { font-size: 14px; margin-bottom: 5px; color: white; text-transform: uppercase; }
-        .churn-banner p { font-size: 12px; color: #ffdadd; }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; padding: 20px; z-index: 1000; }
         .modal-content { background: white; padding: 15px; border-radius: 16px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; color: #333; }
@@ -98,8 +94,8 @@
         <div id="info" class="result"></div>
 
         <div id="bannerChurn" class="churn-banner">
-            <h4>🚨 RIESGO CRÍTICO: Early Churn</h4>
-            <p>El pago ha superado el vencimiento en una cuenta de menos de 4 meses. Esta cuenta puede afectar seriamente tu indicador de deserción inmediata.</p>
+            <h4 style="font-size:14px; margin-bottom:5px">🚨 RIESGO CRÍTICO: Early Churn</h4>
+            <p style="font-size:12px">Pago vencido en cuenta nueva (< 4 meses). ¡Afecta tu indicador!</p>
         </div>
 
         <div id="detalleFacturacion" class="result"></div>
@@ -108,48 +104,31 @@
     <div id="modalAyuda" class="modal">
         <div class="modal-content">
             <div style="text-align:right; font-weight:bold; cursor:pointer" onclick="cerrarAyuda()">CERRAR ✖</div>
-            <img src="Imagenes/Diapositiva2.PNG">
-            <img src="Imagenes/Diapositiva3.PNG">
-            <img src="Imagenes/Diapositiva4.PNG">
-            <img src="Imagenes/Diapositiva5.PNG">
-            <img src="Imagenes/Diapositiva6.PNG">
-            <img src="Imagenes/Diapositiva7.PNG">
+            <img src="Imagenes/Diapositiva2.PNG"><img src="Imagenes/Diapositiva3.PNG"><img src="Imagenes/Diapositiva4.PNG">
+            <img src="Imagenes/Diapositiva5.PNG"><img src="Imagenes/Diapositiva6.PNG"><img src="Imagenes/Diapositiva7.PNG">
         </div>
     </div>
 
     <script>
-        let cicloActual = 0;
-        let fechaInstalacionGlobal = null;
-        let esCuentaNueva = false;
+        let cicloActual = 0, fechaInstalacionGlobal = null, esCuentaNueva = false;
+        const tablaCiclos = { 1: { vence: 15 }, 7: { vence: 21 }, 15: { vence: 1 }, 21: { vence: 5 } };
 
-        const tablaCiclos = {
-            1: { vence: 15 }, 7: { vence: 21 }, 15: { vence: 1 }, 21: { vence: 5 }
-        };
-
-        // Regla de Oro: Asignación de ciclos
         function obtenerCicloAsignado(dia) {
-            if (dia >= 1 && dia <= 6) return 7;
-            if (dia >= 7 && dia <= 14) return 15;
-            if (dia >= 15 && dia <= 20) return 21;
-            if (dia >= 21 && dia <= 31) return 1;
-            return 7;
+            if (dia <= 6) return 7; if (dia <= 14) return 15; if (dia <= 20) return 21; return 1;
         }
 
         function simular() {
-            let fechaStr = document.getElementById("fecha").value;
-            if (!fechaStr) return alert("Ingrese fecha");
-
-            fechaInstalacionGlobal = new Date(fechaStr + 'T00:00:00');
+            let fStr = document.getElementById("fecha").value;
+            if (!fStr) return alert("Ingrese fecha");
+            fechaInstalacionGlobal = new Date(fStr + 'T00:00:00');
             let dia = fechaInstalacionGlobal.getDate();
             cicloActual = obtenerCicloAsignado(dia);
             
-            // Validar si es cuenta de Early Churn (menos de 4 meses)
             let hoy = new Date();
             let mesesDiff = (hoy.getFullYear() - fechaInstalacionGlobal.getFullYear()) * 12 + (hoy.getMonth() - fechaInstalacionGlobal.getMonth());
             esCuentaNueva = mesesDiff <= 4;
 
             actualizarMeses(false);
-
             let posInst = (dia / 60) * 100;
             let posFact = (cicloActual <= dia && cicloActual !== 1) ? ((30 + cicloActual) / 60) * 100 : (cicloActual === 1 ? 52 : (cicloActual / 60) * 100);
             let posVence = posFact + (tablaCiclos[cicloActual].vence < cicloActual ? (tablaCiclos[cicloActual].vence + (30 - cicloActual)) / 60 * 100 : (tablaCiclos[cicloActual].vence - cicloActual) / 60 * 100);
@@ -159,13 +138,12 @@
             setPos("vence", "venceLabel", Math.min(posVence, 94), "V");
             setPos("pay", "payLabel", Math.min(posVence - 8, 85), "P");
 
-            actualizarTextos(new Date(fechaInstalacionGlobal.getFullYear(), fechaInstalacionGlobal.getMonth() + 1, 1), tablaCiclos[cicloActual].vence);
+            actualizarTextos();
             mostrarEstadoNormal();
             document.getElementById("bannerChurn").style.display = "none";
         }
 
         function actualizarMeses(mostrarTercero) {
-            if (!fechaInstalacionGlobal) return;
             let f = fechaInstalacionGlobal;
             let m1 = f.getFullYear() + (f.getMonth() + 1).toString().padStart(2, "0");
             let f2 = new Date(f.getFullYear(), f.getMonth() + 1, 1);
@@ -175,15 +153,21 @@
             document.getElementById("meses").innerHTML = `<span>${m1}</span><span>${m2}</span>${mostrarTercero ? `<span>${m3}</span>` : ''}`;
         }
 
-        function actualizarTextos(mes2Date, diaVence) {
-            let fV1 = new Date(mes2Date.getFullYear(), mes2Date.getMonth(), diaVence);
-            if (diaVence > 10 && cicloActual === 1) fV1.setMonth(fV1.getMonth() - 1);
-            let fV2 = new Date(fV1.getFullYear(), fV1.getMonth() + 1, diaVence);
+        function actualizarTextos() {
+            let fEmision = new Date(fechaInstalacionGlobal.getFullYear(), fechaInstalacionGlobal.getMonth(), cicloActual);
+            if (cicloActual <= fechaInstalacionGlobal.getDate() && cicloActual !== 1) fEmision.setMonth(fEmision.getMonth() + 1);
+            if (cicloActual === 1) fEmision.setMonth(fechaInstalacionGlobal.getMonth() + 1);
+
+            let fV1 = new Date(fEmision.getFullYear(), fEmision.getMonth(), tablaCiclos[cicloActual].vence);
+            if (tablaCiclos[cicloActual].vence < cicloActual) fV1.setMonth(fV1.getMonth() + 1);
+            let fV2 = new Date(fV1.getFullYear(), fV1.getMonth() + 1, tablaCiclos[cicloActual].vence);
 
             document.getElementById("detalleFacturacion").innerHTML = `
                 Ciclo asignado: <strong>${cicloActual}</strong><br>
+                Emisión Factura 1: <strong>${fEmision.toLocaleDateString()}</strong>
+                <span class="tip-pago">Recomienda pagar en los primeros 3 días de emisión</span><br>
                 Vencimiento Factura 1: <strong>${fV1.toLocaleDateString()}</strong>
-                <div id="venceF2Detalle" style="display:none; color:white; margin-top:5px">Vencimiento Factura 2: <strong>${fV2.toLocaleDateString()}</strong></div>
+                <div id="venceF2Detalle" style="display:none; margin-top:5px">Vencimiento Factura 2: <strong>${fV2.toLocaleDateString()}</strong></div>
             `;
         }
 
@@ -203,15 +187,11 @@
 
             let vPos = parseFloat(document.getElementById("vence").style.left);
             if (pos > vPos) {
-                expandir();
-                actualizarMeses(true);
+                expandir(); actualizarMeses(true);
                 document.getElementById("venceF2Detalle").style.display = "block";
-                // SALTA EL MENSAJE SI ES CUENTA NUEVA Y PASA VENCIMIENTO
                 if (esCuentaNueva) document.getElementById("bannerChurn").style.display = "block";
             } else {
-                contraer();
-                actualizarMeses(false);
-                mostrarEstadoNormal();
+                contraer(); actualizarMeses(false); mostrarEstadoNormal();
                 document.getElementById("venceF2Detalle").style.display = "none";
                 document.getElementById("bannerChurn").style.display = "none";
             }
@@ -227,26 +207,15 @@
             let vPos = parseFloat(document.getElementById("vence").style.left);
             setPos("fact2", "fact2Label", Math.min(vPos + 12, 85), cicloActual);
             setPos("vence2", "vence2Label", Math.min(vPos + 28, 98), "V");
-
-            let p = parseFloat(document.getElementById("plan").value) || 0;
-            let a = parseFloat(document.getElementById("anticipo").value) || 0;
-            let s = p - a;
-            let total = p + s + 12000;
-
-            document.getElementById("info").innerHTML = `
-                <span class="warning-text">⚠ Pago atrasado detectado</span><br>
-                Saldo Factura 1: ${s.toLocaleString()}<br>
-                Total Factura 2: <strong style="color:var(--warning)">${total.toLocaleString()}</strong>`;
+            let p = parseFloat(document.getElementById("plan").value) || 0, a = parseFloat(document.getElementById("anticipo").value) || 0;
+            let s = p - a, total = p + s + 12000;
+            document.getElementById("info").innerHTML = `<span class="warning-text">⚠ Pago atrasado</span><br>Total Factura 2: <strong style="color:var(--warning)">${total.toLocaleString()}</strong>`;
         }
 
-        function contraer() {
-            ["fact2", "fact2Label", "vence2", "vence2Label"].forEach(id => document.getElementById(id).style.display = "none");
-        }
-
+        function contraer() { ["fact2", "fact2Label", "vence2", "vence2Label"].forEach(id => document.getElementById(id).style.display = "none"); }
         function mostrarEstadoNormal() {
-            let p = parseFloat(document.getElementById("plan").value) || 0;
-            let a = parseFloat(document.getElementById("anticipo").value) || 0;
-            document.getElementById("info").innerHTML = `Saldo Factura 1: ${(p - a).toLocaleString()}<br><span style="color:var(--success)">Pago dentro del plazo</span>`;
+            let p = parseFloat(document.getElementById("plan").value) || 0, a = parseFloat(document.getElementById("anticipo").value) || 0;
+            document.getElementById("info").innerHTML = `Saldo Factura 1: ${(p - a).toLocaleString()}<br><span style="color:var(--success)">Pago a tiempo ✓</span>`;
         }
 
         function limpiar() { location.reload(); }
