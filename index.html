@@ -1,167 +1,272 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Facturación Pro - Gestión Churn</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --tigo: #0033A0; --tigo2: #0057D9; --danger: #EF476F; --warning: #FFD166; --success: #06D6A0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, var(--tigo), var(--tigo2)); color: white; padding: 20px; }
+        .container { max-width: 420px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .title { font-size: 20px; font-weight: 600; }
+        
+        .help { width: 36px; height: 36px; background: white; color: var(--tigo); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; transition: 0.3s; }
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+        .card { background: rgba(255,255,255,0.12); padding: 18px; border-radius: 16px; margin-bottom: 15px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        label { font-size: 11px; opacity: 0.8; display: block; margin-bottom: 5px; text-transform: uppercase; }
+        input { width: 100%; height: 48px; padding: 12px; border-radius: 12px; border: none; font-size: 14px; background: #f2f2f2; margin-bottom: 15px; outline: none; color: #333; }
+        
+        .botones { display: flex; gap: 10px; margin-top: 5px; }
+        button { flex: 1; padding: 14px; border: none; border-radius: 12px; background: white; color: var(--tigo); font-weight: 600; font-size: 15px; cursor: pointer; }
+        .btn-clear { background: rgba(255,255,255,0.2); color: white; }
 
-<title>Laboratorio Timeline</title>
+        .meses { display: flex; justify-content: space-between; margin-top: 20px; font-weight: 600; opacity: 0.8; font-size: 14px; min-height: 21px; }
+        
+        .timeline { position: relative; height: 160px; margin-top: 10px; }
+        .line { position: absolute; top: 50%; width: 100%; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; }
+        
+        .event { position: absolute; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 2; }
+        .top { top: 35%; transform: translate(-50%, -50%); }
+        .bottom { top: 65%; transform: translate(-50%, -50%); }
+        
+        .install { background: #4CC9F0; }
+        .invoice { background: var(--warning); color: black; }
+        .pay { background: var(--success); transition: none; cursor: grab; }
+        .charge { background: var(--danger); }
 
-<style>
+        .label { position: absolute; font-size: 11px; width: 90px; text-align: center; transform: translateX(-50%); transition: left 0.4s ease; }
+        .label.top { top: 5%; }
+        .label.bottom { top: 85%; }
 
-body{
-font-family:Arial;
-background:#0b3ea8;
-color:white;
-padding:40px;
-}
+        .result { margin-top: 15px; font-size: 14px; line-height: 1.5; }
+        .good { color: var(--success); font-weight: 600; }
+        .warning-text { color: var(--warning); font-weight: 600; }
+        
+        /* Banner de Alerta Early Churn */
+        .churn-banner { margin-top: 20px; padding: 15px; border-radius: 12px; background: rgba(239, 71, 111, 0.2); border-left: 5px solid var(--danger); display: none; animation: fadeIn 0.5s; }
+        .churn-banner h4 { font-size: 13px; margin-bottom: 5px; color: #ff8aab; text-transform: uppercase; }
+        .churn-banner p { font-size: 12px; opacity: 0.9; }
 
-.container{
-max-width:500px;
-margin:auto;
-}
+        /* Banner de Pago Anticipado */
+        .promo-pago { margin-top: 10px; padding: 12px; border-radius: 12px; background: rgba(6, 214, 160, 0.15); border-left: 5px solid var(--success); font-size: 12px; display: none; }
 
-.timeline{
-position:relative;
-height:120px;
-margin-top:40px;
-}
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; padding: 20px; z-index: 1000; }
+        .modal-content { background: white; padding: 15px; border-radius: 16px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; color: #333; }
+        .modal-content img { width: 100%; border-radius: 8px; margin-bottom: 10px; }
 
-.line{
-position:absolute;
-top:60px;
-width:100%;
-height:4px;
-background:white;
-}
-
-.event{
-position:absolute;
-width:42px;
-height:42px;
-border-radius:50%;
-display:flex;
-align-items:center;
-justify-content:center;
-font-weight:bold;
-transform:translate(-50%,-50%);
-top:60px;
-}
-
-.inst{background:#4CC9F0;}
-.fact{background:#FFD166;color:black;}
-.corte{background:#EF476F;}
-
-.label{
-position:absolute;
-top:90px;
-transform:translateX(-50%);
-font-size:13px;
-}
-
-input{
-padding:10px;
-font-size:16px;
-border-radius:8px;
-border:none;
-}
-
-button{
-padding:10px 20px;
-border:none;
-border-radius:8px;
-margin-left:10px;
-cursor:pointer;
-}
-
-</style>
-
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
-
 <body>
+    <div class="container">
+        <div class="header">
+            <div class="title">Simulador Facturación</div>
+            <div class="help" onclick="abrirAyuda()">?</div>
+        </div>
 
-<div class="container">
+        <div class="card">
+            <label>Fecha instalación</label>
+            <input type="date" id="fecha">
+            <label>Valor plan</label>
+            <input type="number" id="plan" placeholder="0">
+            <label>Anticipo</label>
+            <input type="number" id="anticipo" placeholder="0">
+            <div class="botones">
+                <button onclick="simular()">Simular</button>
+                <button class="btn-clear" onclick="limpiar()">Limpiar</button>
+            </div>
+        </div>
 
-<h2>Test Timeline Facturación</h2>
+        <div id="meses" class="meses"></div>
 
-<input type="date" id="fecha">
-<button onclick="calcular()">Calcular</button>
+        <div class="timeline">
+            <div class="line"></div>
+            <div id="inst" class="event install bottom"></div>
+            <div id="instLabel" class="label bottom">Inst</div>
+            <div id="fact" class="event invoice bottom"></div>
+            <div id="factLabel" class="label bottom">Factura</div>
+            <div id="pay" class="event pay top">P</div>
+            <div id="payLabel" class="label top">Pago</div>
+            <div id="vence" class="event charge top">V</div>
+            <div id="venceLabel" class="label top">Vence</div>
+            
+            <div id="fact2" class="event invoice bottom" style="display:none">2</div>
+            <div id="fact2Label" class="label bottom" style="display:none">Factura 2</div>
+            <div id="vence2" class="event charge top" style="display:none">V</div>
+            <div id="vence2Label" class="label top" style="display:none">Vence</div>
+        </div>
 
-<div class="timeline">
+        <div id="info" class="result"></div>
 
-<div class="line"></div>
+        <div id="bannerChurn" class="churn-banner">
+            <h4>🚨 Alerta: Early Churn</h4>
+            <p>Esta cuenta está en sus primeros 4 meses. Asegura el pago temprano para evitar que afecte tu indicador de deserción.</p>
+        </div>
 
-<div id="inst" class="event inst">I</div>
-<div id="instLabel" class="label">Inst</div>
+        <div id="bannerPago" class="promo-pago">
+            💡 <strong>Tip para el asesor:</strong> Recomienda al cliente pagar en los primeros 3 días tras la emisión para mantener una cuenta sana y sin riesgo de corte.
+        </div>
 
-<div id="fact" class="event fact">F</div>
-<div id="factLabel" class="label">Factura</div>
+        <div id="detalleFacturacion" class="result"></div>
+    </div>
 
-<div id="corte" class="event corte">C</div>
-<div id="corteLabel" class="label">Corte</div>
+    <div id="modalAyuda" class="modal">
+        <div class="modal-content">
+            <div style="text-align:right; font-weight:bold; cursor:pointer" onclick="cerrarAyuda()">CERRAR ✖</div>
+            <img src="Imagenes/Diapositiva2.PNG">
+            <img src="Imagenes/Diapositiva3.PNG">
+            <img src="Imagenes/Diapositiva4.PNG">
+            <img src="Imagenes/Diapositiva5.PNG">
+            <img src="Imagenes/Diapositiva6.PNG">
+            <img src="Imagenes/Diapositiva7.PNG">
+        </div>
+    </div>
 
-</div>
+    <script>
+        let cicloActual = 0;
+        let fechaInstalacionGlobal = null;
+        const tablaCiclos = {
+            1: { vence: 15 },
+            7: { vence: 21 },
+            15: { vence: 1 },
+            21: { vence: 5 }
+        };
 
-<p id="info"></p>
+        function obtenerCicloAsignado(dia) {
+            if (dia >= 1 && dia <= 6) return 7;
+            if (dia >= 7 && dia <= 14) return 15;
+            if (dia >= 15 && dia <= 20) return 21;
+            if (dia >= 21 && dia <= 31) return 1;
+            return 7;
+        }
 
-</div>
+        function simular() {
+            let fechaStr = document.getElementById("fecha").value;
+            if (!fechaStr) return alert("Ingrese fecha");
 
-<script>
+            fechaInstalacionGlobal = new Date(fechaStr + 'T00:00:00');
+            let dia = fechaInstalacionGlobal.getDate();
+            cicloActual = obtenerCicloAsignado(dia);
+            
+            // Lógica Early Churn (por debajo)
+            validarEarlyChurn(fechaInstalacionGlobal);
 
-function calcular(){
+            actualizarMeses(false);
 
-let fecha = new Date(document.getElementById("fecha").value)
+            let posInst = (dia / 60) * 100;
+            let posFact = (cicloActual <= dia && cicloActual !== 1) ? ((30 + cicloActual) / 60) * 100 : (cicloActual === 1 ? 52 : (cicloActual / 60) * 100);
+            let posVence = posFact + (tablaCiclos[cicloActual].vence < cicloActual ? (tablaCiclos[cicloActual].vence + (30 - cicloActual)) / 60 * 100 : (tablaCiclos[cicloActual].vence - cicloActual) / 60 * 100);
 
-let dia = fecha.getDate()
+            setPos("inst", "instLabel", posInst, dia);
+            setPos("fact", "factLabel", posFact, cicloActual);
+            setPos("vence", "venceLabel", Math.min(posVence, 94), "V");
+            setPos("pay", "payLabel", Math.min(posVence - 8, 85), "P");
 
-/* CICLO AUTOMATICO */
+            actualizarTextos(new Date(fechaInstalacionGlobal.getFullYear(), fechaInstalacionGlobal.getMonth() + 1, 1), tablaCiclos[cicloActual].vence);
+            mostrarEstadoNormal();
+            document.getElementById("bannerPago").style.display = "block";
+        }
 
-let ciclo
+        function validarEarlyChurn(fInst) {
+            let hoy = new Date(); // En un entorno real esto sería la fecha actual
+            let mesesDif = (hoy.getFullYear() - fInst.getFullYear()) * 12 + (hoy.getMonth() - fInst.getMonth());
+            
+            // Si tiene menos de 4 meses de instalado, mostrar alerta
+            if (mesesDif <= 4) {
+                document.getElementById("bannerChurn").style.display = "block";
+            } else {
+                document.getElementById("bannerChurn").style.display = "none";
+            }
+        }
 
-if(dia<=6) ciclo=7
-else if(dia<=14) ciclo=15
-else if(dia<=20) ciclo=21
-else ciclo=1
+        function actualizarMeses(mostrarTercero) {
+            if (!fechaInstalacionGlobal) return;
+            let f = fechaInstalacionGlobal;
+            let m1 = f.getFullYear() + (f.getMonth() + 1).toString().padStart(2, "0");
+            let f2 = new Date(f.getFullYear(), f.getMonth() + 1, 1);
+            let m2 = f2.getFullYear() + (f2.getMonth() + 1).toString().padStart(2, "0");
+            let f3 = new Date(f.getFullYear(), f.getMonth() + 2, 1);
+            let m3 = f3.getFullYear() + (f3.getMonth() + 1).toString().padStart(2, "0");
+            document.getElementById("meses").innerHTML = `<span>${m1}</span><span>${m2}</span>${mostrarTercero ? `<span>${m3}</span>` : ''}`;
+        }
 
-/* CORTE SEGUN CICLO */
+        function actualizarTextos(mes2Date, diaVence) {
+            let fV1 = new Date(mes2Date.getFullYear(), mes2Date.getMonth(), diaVence);
+            if (diaVence > 10 && cicloActual === 1) fV1.setMonth(fV1.getMonth() - 1);
+            let fV2 = new Date(fV1.getFullYear(), fV1.getMonth() + 1, diaVence);
 
-let corte
+            document.getElementById("detalleFacturacion").innerHTML = `
+                Ciclo asignado: <strong>${cicloActual}</strong><br>
+                Vencimiento Factura 1: <strong>${fV1.toLocaleDateString()}</strong>
+                <div id="venceF2Detalle" style="display:none; color:white; margin-top:5px">Vencimiento Factura 2: <strong>${fV2.toLocaleDateString()}</strong></div>
+            `;
+        }
 
-if(ciclo==1) corte=3
-if(ciclo==7) corte=3
-if(ciclo==15) corte=4
-if(ciclo==21) corte=4
+        function setPos(id, label, pos, text) {
+            document.getElementById(id).style.left = pos + "%";
+            document.getElementById(label).style.left = pos + "%";
+            document.getElementById(id).innerHTML = text;
+        }
 
-/* POSICIONES */
+        const pago = document.getElementById("pay");
+        const move = (e) => {
+            let rect = document.querySelector(".timeline").getBoundingClientRect();
+            let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            let pos = Math.max(0, Math.min(100, (x / rect.width) * 100));
+            pago.style.left = pos + "%";
+            document.getElementById("payLabel").style.left = pos + "%";
 
-let posInst = (dia/31)*100
-let posFact = (ciclo/31)*100
-let posCorte = (corte/31)*100
+            let vPos = parseFloat(document.getElementById("vence").style.left);
+            if (pos > vPos) {
+                expandir();
+                actualizarMeses(true);
+                document.getElementById("venceF2Detalle").style.display = "block";
+            } else {
+                contraer();
+                actualizarMeses(false);
+                mostrarEstadoNormal();
+                document.getElementById("venceF2Detalle").style.display = "none";
+            }
+        };
 
-setPos("inst","instLabel",posInst,dia)
-setPos("fact","factLabel",posFact,ciclo)
-setPos("corte","corteLabel",posCorte,corte)
+        pago.addEventListener("mousedown", () => document.addEventListener("mousemove", move));
+        document.addEventListener("mouseup", () => document.removeEventListener("mousemove", move));
+        pago.addEventListener("touchstart", () => document.addEventListener("touchmove", move));
+        document.addEventListener("touchend", () => document.removeEventListener("touchmove", move));
 
-document.getElementById("info").innerHTML=
+        function expandir() {
+            ["fact2", "fact2Label", "vence2", "vence2Label"].forEach(id => document.getElementById(id).style.display = id.includes("Label") ? "block" : "flex");
+            let vPos = parseFloat(document.getElementById("vence").style.left);
+            setPos("fact2", "fact2Label", Math.min(vPos + 12, 85), cicloActual);
+            setPos("vence2", "vence2Label", Math.min(vPos + 28, 98), "V");
 
-`
-Día instalación: ${dia}<br>
-Ciclo asignado: ${ciclo}<br>
-Corte parcial: ${corte}
-`
+            let p = parseFloat(document.getElementById("plan").value) || 0;
+            let a = parseFloat(document.getElementById("anticipo").value) || 0;
+            let s = p - a;
+            let total = p + s + 12000;
 
-}
+            document.getElementById("info").innerHTML = `
+                <span class="warning-text">⚠ Cliente con pago atrasado</span><br>
+                Saldo Factura 1: ${s.toLocaleString()}<br>
+                Total Factura 2: <strong style="color:var(--warning)">${total.toLocaleString()}</strong>`;
+        }
 
-function setPos(id,label,pos,text){
+        function contraer() {
+            ["fact2", "fact2Label", "vence2", "vence2Label"].forEach(id => document.getElementById(id).style.display = "none");
+        }
 
-document.getElementById(id).style.left=pos+"%"
-document.getElementById(label).style.left=pos+"%"
-document.getElementById(id).innerHTML=text
+        function mostrarEstadoNormal() {
+            let p = parseFloat(document.getElementById("plan").value) || 0;
+            let a = parseFloat(document.getElementById("anticipo").value) || 0;
+            document.getElementById("info").innerHTML = `Saldo Factura 1: ${(p - a).toLocaleString()}<br><span class="good">Pago dentro del plazo ✓</span>`;
+        }
 
-}
-
-</script>
-
+        function limpiar() { location.reload(); }
+        function abrirAyuda() { document.getElementById("modalAyuda").style.display = "flex"; }
+        function cerrarAyuda() { document.getElementById("modalAyuda").style.display = "none"; }
+    </script>
 </body>
 </html>
