@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador Facturación - Gestión Pro</title>
+    <title>Simulador Facturación - Base Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --tigo: #0033A0; --tigo2: #0057D9; --danger: #EF476F; --warning: #FFD166; --success: #06D6A0; }
@@ -95,7 +95,7 @@
 
         <div id="bannerChurn" class="churn-banner">
             <h4 style="font-size:14px; margin-bottom:5px">🚨 RIESGO CRÍTICO: Early Churn</h4>
-            <p style="font-size:12px">Pago vencido en cuenta nueva (< 4 meses). ¡Afecta tu indicador!</p>
+            <p style="font-size:12px">Cuenta de menos de 4 meses con pago atrasado.</p>
         </div>
 
         <div id="detalleFacturacion" class="result"></div>
@@ -138,7 +138,7 @@
             setPos("vence", "venceLabel", Math.min(posVence, 94), "V");
             setPos("pay", "payLabel", Math.min(posVence - 8, 85), "P");
 
-            actualizarTextos();
+            actualizarTextos(false);
             mostrarEstadoNormal();
             document.getElementById("bannerChurn").style.display = "none";
         }
@@ -153,21 +153,26 @@
             document.getElementById("meses").innerHTML = `<span>${m1}</span><span>${m2}</span>${mostrarTercero ? `<span>${m3}</span>` : ''}`;
         }
 
-        function actualizarTextos() {
-            let fEmision = new Date(fechaInstalacionGlobal.getFullYear(), fechaInstalacionGlobal.getMonth(), cicloActual);
-            if (cicloActual <= fechaInstalacionGlobal.getDate() && cicloActual !== 1) fEmision.setMonth(fEmision.getMonth() + 1);
-            if (cicloActual === 1) fEmision.setMonth(fechaInstalacionGlobal.getMonth() + 1);
+        function actualizarTextos(esAtrasado) {
+            let fEmision1 = new Date(fechaInstalacionGlobal.getFullYear(), fechaInstalacionGlobal.getMonth(), cicloActual);
+            if (cicloActual <= fechaInstalacionGlobal.getDate() && cicloActual !== 1) fEmision1.setMonth(fEmision1.getMonth() + 1);
+            if (cicloActual === 1) fEmision1.setMonth(fechaInstalacionGlobal.getMonth() + 1);
 
-            let fV1 = new Date(fEmision.getFullYear(), fEmision.getMonth(), tablaCiclos[cicloActual].vence);
+            let fV1 = new Date(fEmision1.getFullYear(), fEmision1.getMonth(), tablaCiclos[cicloActual].vence);
             if (tablaCiclos[cicloActual].vence < cicloActual) fV1.setMonth(fV1.getMonth() + 1);
+
+            let fEmision2 = new Date(fEmision1.getFullYear(), fEmision1.getMonth() + 1, cicloActual);
             let fV2 = new Date(fV1.getFullYear(), fV1.getMonth() + 1, tablaCiclos[cicloActual].vence);
 
             document.getElementById("detalleFacturacion").innerHTML = `
                 Ciclo asignado: <strong>${cicloActual}</strong><br>
-                Emisión Factura 1: <strong>${fEmision.toLocaleDateString()}</strong>
-                <span class="tip-pago">Recomienda pagar en los primeros 3 días de emisión</span><br>
+                Emisión Factura 1: <strong>${fEmision1.toLocaleDateString()}</strong>
+                ${!esAtrasado ? `<span class="tip-pago">Recomienda pagar en los primeros 3 días de emisión</span>` : ''}
                 Vencimiento Factura 1: <strong>${fV1.toLocaleDateString()}</strong>
-                <div id="venceF2Detalle" style="display:none; margin-top:5px">Vencimiento Factura 2: <strong>${fV2.toLocaleDateString()}</strong></div>
+                <div id="venceF2Detalle" style="display:${esAtrasado ? 'block' : 'none'}; margin-top:5px">
+                    Emisión Factura 2: <strong>${fEmision2.toLocaleDateString()}</strong><br>
+                    Vencimiento Factura 2: <strong>${fV2.toLocaleDateString()}</strong>
+                </div>
             `;
         }
 
@@ -188,11 +193,12 @@
             let vPos = parseFloat(document.getElementById("vence").style.left);
             if (pos > vPos) {
                 expandir(); actualizarMeses(true);
-                document.getElementById("venceF2Detalle").style.display = "block";
+                actualizarTextos(true);
                 if (esCuentaNueva) document.getElementById("bannerChurn").style.display = "block";
             } else {
-                contraer(); actualizarMeses(false); mostrarEstadoNormal();
-                document.getElementById("venceF2Detalle").style.display = "none";
+                contraer(); actualizarMeses(false); 
+                actualizarTextos(false);
+                mostrarEstadoNormal();
                 document.getElementById("bannerChurn").style.display = "none";
             }
         };
