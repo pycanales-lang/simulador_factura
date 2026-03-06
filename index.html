@@ -3,240 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador Facturación - Base Pro</title>
+    <title>Simulador Facturación V2.0 - Predicción de Riesgo</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --tigo: #0033A0; --tigo2: #0057D9; --danger: #EF476F; --warning: #FFD166; --success: #06D6A0; }
+        :root { --tigo: #0033A0; --danger: #EF476F; --warning: #FFD166; --success: #06D6A0; --churn: #4a4a4a; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, var(--tigo), var(--tigo2)); color: white; padding: 20px; }
+        body { font-family: 'Poppins', sans-serif; background: var(--tigo); color: white; padding: 20px; transition: background 0.5s ease; }
+        body.risk-medium { background: #855500; }
+        body.risk-high { background: #5a0000; }
+        body.churn-mode { background: #222; }
+
         .container { max-width: 420px; margin: auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .title { font-size: 20px; font-weight: 600; }
-        .help { width: 36px; height: 36px; background: white; color: var(--tigo); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; }
-
-        .card { background: rgba(255,255,255,0.12); padding: 18px; border-radius: 16px; margin-bottom: 15px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        label { font-size: 11px; opacity: 0.8; display: block; margin-bottom: 5px; text-transform: uppercase; }
-        input { width: 100%; height: 48px; padding: 12px; border-radius: 12px; border: none; font-size: 14px; background: #f2f2f2; margin-bottom: 15px; outline: none; color: #333; }
+        .card { background: rgba(255,255,255,0.12); padding: 18px; border-radius: 16px; margin-bottom: 15px; backdrop-filter: blur(10px); }
+        input { width: 100%; height: 45px; border-radius: 10px; border: none; margin-bottom: 10px; padding: 10px; }
         
-        .botones { display: flex; gap: 10px; margin-top: 5px; }
-        button { flex: 1; padding: 14px; border: none; border-radius: 12px; background: white; color: var(--tigo); font-weight: 600; font-size: 15px; cursor: pointer; }
-        .btn-clear { background: rgba(255,255,255,0.2); color: white; }
-
-        .meses { display: flex; justify-content: space-between; margin-top: 20px; font-weight: 600; opacity: 0.8; font-size: 14px; min-height: 21px; }
-        .timeline { position: relative; height: 160px; margin-top: 10px; }
-        .line { position: absolute; top: 50%; width: 100%; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; }
+        .timeline-container { position: relative; height: 180px; margin: 30px 0; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 10px; }
+        .line { position: absolute; top: 50%; width: 90%; left: 5%; height: 4px; background: rgba(255,255,255,0.3); }
         
-        .event { position: absolute; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 2; }
-        .top { top: 35%; transform: translate(-50%, -50%); }
-        .bottom { top: 65%; transform: translate(-50%, -50%); }
+        .event { position: absolute; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; transform: translate(-50%, -50%); z-index: 5; }
+        .pay { background: var(--success); cursor: grab; z-index: 10; box-shadow: 0 0 15px rgba(6,214,160,0.5); }
+        .corte { background: #000; color: #fff; border: 2px solid var(--danger); display: none; }
         
-        .install { background: #4CC9F0; }
-        .invoice { background: var(--warning); color: black; }
-        .pay { background: var(--success); transition: none; cursor: grab; }
-        .charge { background: var(--danger); }
-
-        .label { position: absolute; font-size: 11px; width: 90px; text-align: center; transform: translateX(-50%); transition: left 0.4s ease; }
-        .label.top { top: 5%; }
-        .label.bottom { top: 85%; }
-
-        /* DETALLE ESTILO IMAGEN */
-        .result { margin-top: 15px; font-size: 14px; line-height: 1.6; }
-        .warning-label { color: var(--warning); font-weight: 600; display: block; margin-bottom: 5px; }
-        .total-factura { font-size: 20px; color: var(--warning); font-weight: 600; margin: 10px 0; display: block; }
-        .tip-pago { color: var(--success); font-size: 13px; font-weight: 400; display: block; margin-top: 2px; }
+        .label { position: absolute; font-size: 10px; transform: translateX(-50%); width: 70px; text-align: center; opacity: 0.8; }
         
-        .churn-banner { margin-top: 15px; padding: 12px; border-radius: 12px; background: #8B0000; border: 2px solid var(--danger); display: none; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .status-pill { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 10px; }
+        .bg-success { background: var(--success); }
+        .bg-danger { background: var(--danger); }
 
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; padding: 20px; z-index: 1000; }
-        .modal-content { background: white; padding: 15px; border-radius: 16px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; color: #333; }
-        .modal-content img { width: 100%; border-radius: 8px; margin-bottom: 10px; }
+        #churn-stamp { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-20deg); font-size: 40px; font-weight: 900; color: rgba(255,0,0,0.4); border: 10px solid rgba(255,0,0,0.4); padding: 20px; pointer-events: none; display: none; text-transform: uppercase; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="title">Simulador Facturación</div>
-            <div class="help" onclick="abrirAyuda()">?</div>
-        </div>
 
-        <div class="card">
-            <label>Fecha instalación</label>
-            <input type="date" id="fecha">
-            <label>Valor plan</label>
-            <input type="number" id="plan" placeholder="0">
-            <label>Anticipo</label>
-            <input type="number" id="anticipo" placeholder="0">
-            <div class="botones">
-                <button onclick="simular()">Simular</button>
-                <button class="btn-clear" onclick="limpiar()">Limpiar</button>
+<div class="container">
+    <h2 style="margin-bottom: 20px;">Facturación Pro 2.0</h2>
+    
+    <div class="card">
+        <label style="font-size: 11px;">FECHA INSTALACIÓN</label>
+        <input type="date" id="fecha" onchange="simular()">
+        <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+                <label style="font-size: 11px;">PLAN</label>
+                <input type="number" id="plan" value="180000">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 11px;">ANTICIPO</label>
+                <input type="number" id="anticipo" value="0">
             </div>
         </div>
-
-        <div id="meses" class="meses"></div>
-
-        <div class="timeline">
-            <div class="line"></div>
-            <div id="inst" class="event install bottom"></div>
-            <div id="instLabel" class="label bottom">Inst</div>
-            <div id="fact" class="event invoice bottom"></div>
-            <div id="factLabel" class="label bottom">Factura</div>
-            <div id="pay" class="event pay top">P</div>
-            <div id="payLabel" class="label top">Pago</div>
-            <div id="vence" class="event charge top">V</div>
-            <div id="venceLabel" class="label top">Vence</div>
-            
-            <div id="fact2" class="event invoice bottom" style="display:none">2</div>
-            <div id="fact2Label" class="label bottom" style="display:none">Factura 2</div>
-            <div id="vence2" class="event charge top" style="display:none">V</div>
-            <div id="vence2Label" class="label top" style="display:none">Vence</div>
-        </div>
-
-        <div id="info" class="result"></div>
-
-        <div id="bannerChurn" class="churn-banner">
-            <h4 style="font-size:13px; color:white">🚨 RIESGO CRÍTICO: Early Churn</h4>
-            <p style="font-size:11px; color:#ffdadd">Cuenta nueva con pago atrasado. ¡Gestión inmediata!</p>
-        </div>
-
-        <div id="detalleFacturacion" class="result"></div>
     </div>
 
-    <div id="modalAyuda" class="modal">
-        <div class="modal-content">
-            <div style="text-align:right; font-weight:bold; cursor:pointer" onclick="cerrarAyuda()">CERRAR ✖</div>
-            <img src="Imagenes/Diapositiva2.PNG"><img src="Imagenes/Diapositiva3.PNG"><img src="Imagenes/Diapositiva4.PNG">
-            <img src="Imagenes/Diapositiva5.PNG"><img src="Imagenes/Diapositiva6.PNG"><img src="Imagenes/Diapositiva7.PNG">
-        </div>
+    <div id="status-display" class="status-pill bg-success">CUENTA SANA</div>
+
+    <div class="timeline-container">
+        <div class="line"></div>
+        <div id="ev-inst" class="event" style="background: #4CC9F0; top: 50%; left: 10%;">I</div>
+        <div id="ev-vence" class="event" style="background: var(--danger); top: 50%; left: 40%;">V1</div>
+        <div id="ev-corte" class="event corte" style="top: 50%; left: 55%;">✂</div>
+        
+        <div id="ev-pay" class="event pay" style="top: 30%; left: 25%;">P</div>
+        
+        <div id="label-pay" class="label" style="top: 10%; left: 25%;">Día de Pago</div>
     </div>
 
-    <script>
-        let cicloActual = 0, fechaInstalacionGlobal = null, esCuentaNueva = false;
-        const tablaCiclos = { 1: { vence: 15 }, 7: { vence: 21 }, 15: { vence: 1 }, 21: { vence: 5 } };
+    <div id="info-box" class="card" style="min-height: 120px;">
+        <div id="content-normal">
+            <p id="msg-emision">Emisión: --/--/--</p>
+            <p style="color: var(--success); font-size: 12px;">💡 Tip: Pago en los primeros 3 días mejora el Early Churn.</p>
+        </div>
+        <div id="content-risk" style="display: none;">
+            <p style="color: var(--warning); font-weight: bold;">⚠️ RIESGO DE CORTE ACTIVO</p>
+            <p id="msg-corte">Fecha de Suspensión: --/--/--</p>
+        </div>
+    </div>
+</div>
 
-        function obtenerCicloAsignado(dia) {
-            if (dia <= 6) return 7; if (dia <= 14) return 15; if (dia <= 20) return 21; return 1;
+<div id="churn-stamp">CUENTA EN CHURN</div>
+
+<script>
+    const tabla = { 1: { v: 15, c: 3 }, 7: { v: 21, c: 9 }, 15: { v: 1, c: 17 }, 21: { v: 5, c: 4 } };
+    let currentCiclo = 7;
+
+    function simular() {
+        const f = new Date(document.getElementById('fecha').value + 'T00:00:00');
+        const dia = f.getDate();
+        
+        if (dia <= 6) currentCiclo = 7;
+        else if (dia <= 14) currentCiclo = 15;
+        else if (dia <= 20) currentCiclo = 21;
+        else currentCiclo = 1;
+
+        document.getElementById('msg-emision').innerText = `Ciclo: ${currentCiclo} | Emisión: ${currentCiclo}/${f.getMonth()+2}/${f.getFullYear()}`;
+    }
+
+    const pay = document.getElementById('ev-pay');
+    const container = document.querySelector('.timeline-container');
+
+    const handleMove = (e) => {
+        let rect = container.getBoundingClientRect();
+        let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        let pos = Math.max(5, Math.min(95, (x / rect.width) * 100));
+        
+        pay.style.left = pos + '%';
+        document.getElementById('label-pay').style.left = pos + '%';
+
+        // LÓGICA DE GESTIÓN 2.0
+        if (pos > 40 && pos < 75) { // Pasó Vencimiento 1
+            document.body.className = 'risk-medium';
+            document.getElementById('ev-corte').style.display = 'flex';
+            document.getElementById('content-normal').style.display = 'none';
+            document.getElementById('content-risk').style.display = 'block';
+            document.getElementById('status-display').innerText = 'RIESGO DE MORA';
+            document.getElementById('status-display').className = 'status-pill bg-danger';
+        } 
+        else if (pos >= 75) { // Hacia el Churn (4 meses simulados)
+            document.body.className = 'churn-mode';
+            document.getElementById('churn-stamp').style.display = 'block';
+            document.getElementById('status-display').innerText = 'EARLY CHURN DETECTADO';
         }
-
-        function simular() {
-            let fStr = document.getElementById("fecha").value;
-            if (!fStr) return alert("Ingrese fecha");
-            fechaInstalacionGlobal = new Date(fStr + 'T00:00:00');
-            let dia = fechaInstalacionGlobal.getDate();
-            cicloActual = obtenerCicloAsignado(dia);
-            
-            let hoy = new Date();
-            let mesesDiff = (hoy.getFullYear() - fechaInstalacionGlobal.getFullYear()) * 12 + (hoy.getMonth() - fechaInstalacionGlobal.getMonth());
-            esCuentaNueva = mesesDiff <= 4;
-
-            actualizarMeses(false);
-            let posInst = (dia / 60) * 100;
-            let posFact = (cicloActual <= dia && cicloActual !== 1) ? ((30 + cicloActual) / 60) * 100 : (cicloActual === 1 ? 52 : (cicloActual / 60) * 100);
-            let posVence = posFact + (tablaCiclos[cicloActual].vence < cicloActual ? (tablaCiclos[cicloActual].vence + (30 - cicloActual)) / 60 * 100 : (tablaCiclos[cicloActual].vence - cicloActual) / 60 * 100);
-
-            setPos("inst", "instLabel", posInst, dia);
-            setPos("fact", "factLabel", posFact, cicloActual);
-            setPos("vence", "venceLabel", Math.min(posVence, 94), "V");
-            setPos("pay", "payLabel", Math.min(posVence - 8, 85), "P");
-
-            actualizarDetalle(false);
-            document.getElementById("bannerChurn").style.display = "none";
+        else { // Sano
+            document.body.className = '';
+            document.getElementById('ev-corte').style.display = 'none';
+            document.getElementById('content-normal').style.display = 'block';
+            document.getElementById('content-risk').style.display = 'none';
+            document.getElementById('churn-stamp').style.display = 'none';
+            document.getElementById('status-display').innerText = 'CUENTA SANA';
+            document.getElementById('status-display').className = 'status-pill bg-success';
         }
+    };
 
-        function actualizarMeses(mostrarTercero) {
-            let f = fechaInstalacionGlobal;
-            let m1 = f.getFullYear() + (f.getMonth() + 1).toString().padStart(2, "0");
-            let f2 = new Date(f.getFullYear(), f.getMonth() + 1, 1);
-            let m2 = f2.getFullYear() + (f2.getMonth() + 1).toString().padStart(2, "0");
-            let f3 = new Date(f.getFullYear(), f.getMonth() + 2, 1);
-            let m3 = f3.getFullYear() + (f3.getMonth() + 1).toString().padStart(2, "0");
-            document.getElementById("meses").innerHTML = `<span>${m1}</span><span>${m2}</span>${mostrarTercero ? `<span>${m3}</span>` : ''}`;
-        }
-
-        function actualizarDetalle(esAtrasado) {
-            let p = parseFloat(document.getElementById("plan").value) || 0;
-            let a = parseFloat(document.getElementById("anticipo").value) || 0;
-            let s = p - a;
-
-            // Fechas
-            let fEmision1 = new Date(fechaInstalacionGlobal.getFullYear(), fechaInstalacionGlobal.getMonth(), cicloActual);
-            if (cicloActual <= fechaInstalacionGlobal.getDate() && cicloActual !== 1) fEmision1.setMonth(fEmision1.getMonth() + 1);
-            if (cicloActual === 1) fEmision1.setMonth(fechaInstalacionGlobal.getMonth() + 1);
-            let fV1 = new Date(fEmision1.getFullYear(), fEmision1.getMonth(), tablaCiclos[cicloActual].vence);
-            if (tablaCiclos[cicloActual].vence < cicloActual) fV1.setMonth(fV1.getMonth() + 1);
-            let fEmision2 = new Date(fEmision1.getFullYear(), fEmision1.getMonth() + 1, cicloActual);
-            let fV2 = new Date(fV1.getFullYear(), fV1.getMonth() + 1, tablaCiclos[cicloActual].vence);
-
-            // Bloque dinámico de cobro (Estilo Imagen)
-            let bloqueCobro = "";
-            if (esAtrasado) {
-                let total = p + s + 12000;
-                bloqueCobro = `
-                    <span class="warning-label">⚠ Cliente no pagó la primera factura</span>
-                    Saldo factura 1: ${s.toLocaleString()}<br>
-                    Plan siguiente factura: ${p.toLocaleString()}<br>
-                    Cargo administrativo: 12.000<br>
-                    <span class="total-factura">Total Factura 2: ${total.toLocaleString()}</span>
-                `;
-            } else {
-                bloqueCobro = `Saldo primera factura: ${s.toLocaleString()}<br><span style="color:var(--success); font-weight:600">Pago dentro del plazo</span>`;
-            }
-
-            document.getElementById("info").innerHTML = bloqueCobro;
-
-            // Bloque de Fechas (Regla de Oro)
-            document.getElementById("detalleFacturacion").innerHTML = `
-                Ciclo asignado: <strong>${cicloActual}</strong><br>
-                Emisión Factura 1: <strong>${fEmision1.toLocaleDateString()}</strong>
-                ${!esAtrasado ? `<span class="tip-pago">Recomienda pagar en los primeros 3 días de emisión</span>` : ''}
-                Vencimiento Factura 1: <strong>${fV1.toLocaleDateString()}</strong>
-                <div style="display:${esAtrasado ? 'block' : 'none'}; margin-top:5px">
-                    Emisión Factura 2: <strong>${fEmision2.toLocaleDateString()}</strong><br>
-                    Vencimiento Factura 2: <strong>${fV2.toLocaleDateString()}</strong>
-                </div>
-            `;
-        }
-
-        function setPos(id, label, pos, text) {
-            document.getElementById(id).style.left = pos + "%";
-            document.getElementById(label).style.left = pos + "%";
-            document.getElementById(id).innerHTML = text;
-        }
-
-        const pago = document.getElementById("pay");
-        const move = (e) => {
-            let rect = document.querySelector(".timeline").getBoundingClientRect();
-            let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            let pos = Math.max(0, Math.min(100, (x / rect.width) * 100));
-            pago.style.left = pos + "%";
-            document.getElementById("payLabel").style.left = pos + "%";
-
-            let vPos = parseFloat(document.getElementById("vence").style.left);
-            if (pos > vPos) {
-                expandir(); actualizarMeses(true); actualizarDetalle(true);
-                if (esCuentaNueva) document.getElementById("bannerChurn").style.display = "block";
-            } else {
-                contraer(); actualizarMeses(false); actualizarDetalle(false);
-                document.getElementById("bannerChurn").style.display = "none";
-            }
-        };
-
-        pago.addEventListener("mousedown", () => document.addEventListener("mousemove", move));
-        document.addEventListener("mouseup", () => document.removeEventListener("mousemove", move));
-        pago.addEventListener("touchstart", () => document.addEventListener("touchmove", move));
-        document.addEventListener("touchend", () => document.removeEventListener("touchmove", move));
-
-        function expandir() {
-            ["fact2", "fact2Label", "vence2", "vence2Label"].forEach(id => document.getElementById(id).style.display = id.includes("Label") ? "block" : "flex");
-            let vPos = parseFloat(document.getElementById("vence").style.left);
-            setPos("fact2", "fact2Label", Math.min(vPos + 12, 85), cicloActual);
-            setPos("vence2", "vence2Label", Math.min(vPos + 28, 98), "V");
-        }
-
-        function contraer() { ["fact2", "fact2Label", "vence2", "vence2Label"].forEach(id => document.getElementById(id).style.display = "none"); }
-        function limpiar() { location.reload(); }
-        function abrirAyuda() { document.getElementById("modalAyuda").style.display = "flex"; }
-        function cerrarAyuda() { document.getElementById("modalAyuda").style.display = "none"; }
-    </script>
+    pay.addEventListener('mousedown', () => document.addEventListener('mousemove', handleMove));
+    document.addEventListener('mouseup', () => document.removeEventListener('mousemove', handleMove));
+    pay.addEventListener('touchstart', () => document.addEventListener('touchmove', handleMove));
+    document.addEventListener('touchend', () => document.removeEventListener('touchmove', handleMove));
+</script>
 </body>
 </html>
