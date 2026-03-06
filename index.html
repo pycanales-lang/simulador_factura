@@ -39,12 +39,13 @@
         .label.top { top: 5%; }
         .label.bottom { top: 85%; }
 
+        /* DETALLE ESTILO IMAGEN */
         .result { margin-top: 15px; font-size: 14px; line-height: 1.6; }
-        .good { color: var(--success); font-weight: 600; }
-        .warning-text { color: var(--warning); font-weight: 600; }
-        .tip-pago { color: #06D6A0; font-size: 12px; font-style: italic; display: block; margin-top: 2px; }
+        .warning-label { color: var(--warning); font-weight: 600; display: block; margin-bottom: 5px; }
+        .total-factura { font-size: 20px; color: var(--warning); font-weight: 600; margin: 10px 0; display: block; }
+        .tip-pago { color: var(--success); font-size: 13px; font-weight: 400; display: block; margin-top: 2px; }
         
-        .churn-banner { margin-top: 20px; padding: 15px; border-radius: 12px; background: #8B0000; border: 2px solid var(--danger); display: none; animation: pulse 2s infinite; }
+        .churn-banner { margin-top: 15px; padding: 12px; border-radius: 12px; background: #8B0000; border: 2px solid var(--danger); display: none; animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; padding: 20px; z-index: 1000; }
@@ -94,8 +95,8 @@
         <div id="info" class="result"></div>
 
         <div id="bannerChurn" class="churn-banner">
-            <h4 style="font-size:14px; margin-bottom:5px">🚨 RIESGO CRÍTICO: Early Churn</h4>
-            <p style="font-size:12px">Cuenta de menos de 4 meses con pago atrasado.</p>
+            <h4 style="font-size:13px; color:white">🚨 RIESGO CRÍTICO: Early Churn</h4>
+            <p style="font-size:11px; color:#ffdadd">Cuenta nueva con pago atrasado. ¡Gestión inmediata!</p>
         </div>
 
         <div id="detalleFacturacion" class="result"></div>
@@ -138,8 +139,7 @@
             setPos("vence", "venceLabel", Math.min(posVence, 94), "V");
             setPos("pay", "payLabel", Math.min(posVence - 8, 85), "P");
 
-            actualizarTextos(false);
-            mostrarEstadoNormal();
+            actualizarDetalle(false);
             document.getElementById("bannerChurn").style.display = "none";
         }
 
@@ -153,23 +153,44 @@
             document.getElementById("meses").innerHTML = `<span>${m1}</span><span>${m2}</span>${mostrarTercero ? `<span>${m3}</span>` : ''}`;
         }
 
-        function actualizarTextos(esAtrasado) {
+        function actualizarDetalle(esAtrasado) {
+            let p = parseFloat(document.getElementById("plan").value) || 0;
+            let a = parseFloat(document.getElementById("anticipo").value) || 0;
+            let s = p - a;
+
+            // Fechas
             let fEmision1 = new Date(fechaInstalacionGlobal.getFullYear(), fechaInstalacionGlobal.getMonth(), cicloActual);
             if (cicloActual <= fechaInstalacionGlobal.getDate() && cicloActual !== 1) fEmision1.setMonth(fEmision1.getMonth() + 1);
             if (cicloActual === 1) fEmision1.setMonth(fechaInstalacionGlobal.getMonth() + 1);
-
             let fV1 = new Date(fEmision1.getFullYear(), fEmision1.getMonth(), tablaCiclos[cicloActual].vence);
             if (tablaCiclos[cicloActual].vence < cicloActual) fV1.setMonth(fV1.getMonth() + 1);
-
             let fEmision2 = new Date(fEmision1.getFullYear(), fEmision1.getMonth() + 1, cicloActual);
             let fV2 = new Date(fV1.getFullYear(), fV1.getMonth() + 1, tablaCiclos[cicloActual].vence);
 
+            // Bloque dinámico de cobro (Estilo Imagen)
+            let bloqueCobro = "";
+            if (esAtrasado) {
+                let total = p + s + 12000;
+                bloqueCobro = `
+                    <span class="warning-label">⚠ Cliente no pagó la primera factura</span>
+                    Saldo factura 1: ${s.toLocaleString()}<br>
+                    Plan siguiente factura: ${p.toLocaleString()}<br>
+                    Cargo administrativo: 12.000<br>
+                    <span class="total-factura">Total Factura 2: ${total.toLocaleString()}</span>
+                `;
+            } else {
+                bloqueCobro = `Saldo primera factura: ${s.toLocaleString()}<br><span style="color:var(--success); font-weight:600">Pago dentro del plazo</span>`;
+            }
+
+            document.getElementById("info").innerHTML = bloqueCobro;
+
+            // Bloque de Fechas (Regla de Oro)
             document.getElementById("detalleFacturacion").innerHTML = `
                 Ciclo asignado: <strong>${cicloActual}</strong><br>
                 Emisión Factura 1: <strong>${fEmision1.toLocaleDateString()}</strong>
                 ${!esAtrasado ? `<span class="tip-pago">Recomienda pagar en los primeros 3 días de emisión</span>` : ''}
                 Vencimiento Factura 1: <strong>${fV1.toLocaleDateString()}</strong>
-                <div id="venceF2Detalle" style="display:${esAtrasado ? 'block' : 'none'}; margin-top:5px">
+                <div style="display:${esAtrasado ? 'block' : 'none'}; margin-top:5px">
                     Emisión Factura 2: <strong>${fEmision2.toLocaleDateString()}</strong><br>
                     Vencimiento Factura 2: <strong>${fV2.toLocaleDateString()}</strong>
                 </div>
@@ -192,13 +213,10 @@
 
             let vPos = parseFloat(document.getElementById("vence").style.left);
             if (pos > vPos) {
-                expandir(); actualizarMeses(true);
-                actualizarTextos(true);
+                expandir(); actualizarMeses(true); actualizarDetalle(true);
                 if (esCuentaNueva) document.getElementById("bannerChurn").style.display = "block";
             } else {
-                contraer(); actualizarMeses(false); 
-                actualizarTextos(false);
-                mostrarEstadoNormal();
+                contraer(); actualizarMeses(false); actualizarDetalle(false);
                 document.getElementById("bannerChurn").style.display = "none";
             }
         };
@@ -213,17 +231,9 @@
             let vPos = parseFloat(document.getElementById("vence").style.left);
             setPos("fact2", "fact2Label", Math.min(vPos + 12, 85), cicloActual);
             setPos("vence2", "vence2Label", Math.min(vPos + 28, 98), "V");
-            let p = parseFloat(document.getElementById("plan").value) || 0, a = parseFloat(document.getElementById("anticipo").value) || 0;
-            let s = p - a, total = p + s + 12000;
-            document.getElementById("info").innerHTML = `<span class="warning-text">⚠ Pago atrasado</span><br>Total Factura 2: <strong style="color:var(--warning)">${total.toLocaleString()}</strong>`;
         }
 
         function contraer() { ["fact2", "fact2Label", "vence2", "vence2Label"].forEach(id => document.getElementById(id).style.display = "none"); }
-        function mostrarEstadoNormal() {
-            let p = parseFloat(document.getElementById("plan").value) || 0, a = parseFloat(document.getElementById("anticipo").value) || 0;
-            document.getElementById("info").innerHTML = `Saldo Factura 1: ${(p - a).toLocaleString()}<br><span style="color:var(--success)">Pago a tiempo ✓</span>`;
-        }
-
         function limpiar() { location.reload(); }
         function abrirAyuda() { document.getElementById("modalAyuda").style.display = "flex"; }
         function cerrarAyuda() { document.getElementById("modalAyuda").style.display = "none"; }
