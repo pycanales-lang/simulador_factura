@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador Facturación Pro - Gestión Churn</title>
+    <title>Simulador Facturación - Control Churn</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --tigo: #0033A0; --tigo2: #0057D9; --danger: #EF476F; --warning: #FFD166; --success: #06D6A0; }
@@ -13,7 +13,7 @@
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .title { font-size: 20px; font-weight: 600; }
         
-        .help { width: 36px; height: 36px; background: white; color: var(--tigo); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .help { width: 36px; height: 36px; background: white; color: var(--tigo); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; }
 
         .card { background: rgba(255,255,255,0.12); padding: 18px; border-radius: 16px; margin-bottom: 15px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
         label { font-size: 11px; opacity: 0.8; display: block; margin-bottom: 5px; text-transform: uppercase; }
@@ -42,22 +42,18 @@
         .label.bottom { top: 85%; }
 
         .result { margin-top: 15px; font-size: 14px; line-height: 1.5; }
-        .good { color: var(--success); font-weight: 600; }
         .warning-text { color: var(--warning); font-weight: 600; }
         
         /* Banner de Alerta Early Churn */
-        .churn-banner { margin-top: 20px; padding: 15px; border-radius: 12px; background: rgba(239, 71, 111, 0.2); border-left: 5px solid var(--danger); display: none; animation: fadeIn 0.5s; }
-        .churn-banner h4 { font-size: 13px; margin-bottom: 5px; color: #ff8aab; text-transform: uppercase; }
-        .churn-banner p { font-size: 12px; opacity: 0.9; }
+        .churn-banner { margin-top: 20px; padding: 15px; border-radius: 12px; background: #8B0000; border: 2px solid var(--danger); display: none; animation: pulse 2s infinite; }
+        .churn-banner h4 { font-size: 14px; margin-bottom: 5px; color: white; text-transform: uppercase; }
+        .churn-banner p { font-size: 12px; color: #ffdadd; }
 
-        /* Banner de Pago Anticipado */
-        .promo-pago { margin-top: 10px; padding: 12px; border-radius: 12px; background: rgba(6, 214, 160, 0.15); border-left: 5px solid var(--success); font-size: 12px; display: none; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; padding: 20px; z-index: 1000; }
         .modal-content { background: white; padding: 15px; border-radius: 16px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; color: #333; }
         .modal-content img { width: 100%; border-radius: 8px; margin-bottom: 10px; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -102,12 +98,8 @@
         <div id="info" class="result"></div>
 
         <div id="bannerChurn" class="churn-banner">
-            <h4>🚨 Alerta: Early Churn</h4>
-            <p>Esta cuenta está en sus primeros 4 meses. Asegura el pago temprano para evitar que afecte tu indicador de deserción.</p>
-        </div>
-
-        <div id="bannerPago" class="promo-pago">
-            💡 <strong>Tip para el asesor:</strong> Recomienda al cliente pagar en los primeros 3 días tras la emisión para mantener una cuenta sana y sin riesgo de corte.
+            <h4>🚨 RIESGO CRÍTICO: Early Churn</h4>
+            <p>El pago ha superado el vencimiento en una cuenta de menos de 4 meses. Esta cuenta puede afectar seriamente tu indicador de deserción inmediata.</p>
         </div>
 
         <div id="detalleFacturacion" class="result"></div>
@@ -128,13 +120,13 @@
     <script>
         let cicloActual = 0;
         let fechaInstalacionGlobal = null;
+        let esCuentaNueva = false;
+
         const tablaCiclos = {
-            1: { vence: 15 },
-            7: { vence: 21 },
-            15: { vence: 1 },
-            21: { vence: 5 }
+            1: { vence: 15 }, 7: { vence: 21 }, 15: { vence: 1 }, 21: { vence: 5 }
         };
 
+        // Regla de Oro: Asignación de ciclos
         function obtenerCicloAsignado(dia) {
             if (dia >= 1 && dia <= 6) return 7;
             if (dia >= 7 && dia <= 14) return 15;
@@ -151,8 +143,10 @@
             let dia = fechaInstalacionGlobal.getDate();
             cicloActual = obtenerCicloAsignado(dia);
             
-            // Lógica Early Churn (por debajo)
-            validarEarlyChurn(fechaInstalacionGlobal);
+            // Validar si es cuenta de Early Churn (menos de 4 meses)
+            let hoy = new Date();
+            let mesesDiff = (hoy.getFullYear() - fechaInstalacionGlobal.getFullYear()) * 12 + (hoy.getMonth() - fechaInstalacionGlobal.getMonth());
+            esCuentaNueva = mesesDiff <= 4;
 
             actualizarMeses(false);
 
@@ -167,19 +161,7 @@
 
             actualizarTextos(new Date(fechaInstalacionGlobal.getFullYear(), fechaInstalacionGlobal.getMonth() + 1, 1), tablaCiclos[cicloActual].vence);
             mostrarEstadoNormal();
-            document.getElementById("bannerPago").style.display = "block";
-        }
-
-        function validarEarlyChurn(fInst) {
-            let hoy = new Date(); // En un entorno real esto sería la fecha actual
-            let mesesDif = (hoy.getFullYear() - fInst.getFullYear()) * 12 + (hoy.getMonth() - fInst.getMonth());
-            
-            // Si tiene menos de 4 meses de instalado, mostrar alerta
-            if (mesesDif <= 4) {
-                document.getElementById("bannerChurn").style.display = "block";
-            } else {
-                document.getElementById("bannerChurn").style.display = "none";
-            }
+            document.getElementById("bannerChurn").style.display = "none";
         }
 
         function actualizarMeses(mostrarTercero) {
@@ -224,11 +206,14 @@
                 expandir();
                 actualizarMeses(true);
                 document.getElementById("venceF2Detalle").style.display = "block";
+                // SALTA EL MENSAJE SI ES CUENTA NUEVA Y PASA VENCIMIENTO
+                if (esCuentaNueva) document.getElementById("bannerChurn").style.display = "block";
             } else {
                 contraer();
                 actualizarMeses(false);
                 mostrarEstadoNormal();
                 document.getElementById("venceF2Detalle").style.display = "none";
+                document.getElementById("bannerChurn").style.display = "none";
             }
         };
 
@@ -249,7 +234,7 @@
             let total = p + s + 12000;
 
             document.getElementById("info").innerHTML = `
-                <span class="warning-text">⚠ Cliente con pago atrasado</span><br>
+                <span class="warning-text">⚠ Pago atrasado detectado</span><br>
                 Saldo Factura 1: ${s.toLocaleString()}<br>
                 Total Factura 2: <strong style="color:var(--warning)">${total.toLocaleString()}</strong>`;
         }
@@ -261,7 +246,7 @@
         function mostrarEstadoNormal() {
             let p = parseFloat(document.getElementById("plan").value) || 0;
             let a = parseFloat(document.getElementById("anticipo").value) || 0;
-            document.getElementById("info").innerHTML = `Saldo Factura 1: ${(p - a).toLocaleString()}<br><span class="good">Pago dentro del plazo ✓</span>`;
+            document.getElementById("info").innerHTML = `Saldo Factura 1: ${(p - a).toLocaleString()}<br><span style="color:var(--success)">Pago dentro del plazo</span>`;
         }
 
         function limpiar() { location.reload(); }
